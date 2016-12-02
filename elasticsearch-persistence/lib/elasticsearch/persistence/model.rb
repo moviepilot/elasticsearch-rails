@@ -100,7 +100,7 @@ module Elasticsearch
             end
 
             def deserialize(document)
-              object = klass.new document['_source']
+              object = concrete_klass(document).new document['_source']
 
               # Set the meta attributes when fetching the document from Elasticsearch
               #
@@ -117,6 +117,17 @@ module Elasticsearch
 
               object.instance_variable_set(:@persisted, true)
               object
+            end 
+            
+            def concrete_klass(document)
+              concrete_klass = klass
+              if document['_source'].is_a?(Hash)
+                document_type_const_name = document['_source']['type'].to_s.capitalize
+                if document_type_const_name.present? && Object.const_defined?(document_type_const_name)
+                  concrete_klass = Object.const_get(document_type_const_name)
+                end
+              end
+              return concrete_klass
             end
           end
 
