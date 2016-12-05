@@ -234,7 +234,7 @@ module Elasticsearch
           index_name 'people'
         end
         should "return a concrete class if a class type is stored" do
-          Worker.create name: "John", type: "worker"
+          Worker.create name: "John", type: "Worker"
           Person.gateway.refresh_index!
           assert_equal Worker, Person.all.first.class
         end

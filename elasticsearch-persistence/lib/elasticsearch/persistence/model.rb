@@ -120,14 +120,11 @@ module Elasticsearch
             end 
             
             def concrete_klass(document)
+              return klass unless document['_source'].is_a?(Hash)
               concrete_klass = klass
-              if document['_source'].is_a?(Hash)
-                document_type_const_name = document['_source']['type'].to_s
-                if document_type_const_name.present? && Object.const_defined?(document_type_const_name)
-                  concrete_klass = Object.const_get(document_type_const_name)
-                end
-              end
-              return concrete_klass
+              document_type_const_name = document['_source']['type'].to_s
+              return klass if document_type_const_name.blank?
+              ActiveSupport::Dependencies.safe_constantize(document_type_const_name) || klass
             end
           end
 
