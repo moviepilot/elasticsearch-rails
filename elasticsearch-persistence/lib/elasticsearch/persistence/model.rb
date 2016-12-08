@@ -121,10 +121,19 @@ module Elasticsearch
             
             def concrete_klass(document)
               return klass unless document['_source'].is_a?(Hash)
-              concrete_klass = klass
               document_type_const_name = document['_source']['type'].to_s
-              return klass if document_type_const_name.blank?
-              ActiveSupport::Dependencies.safe_constantize(document_type_const_name) || klass
+              resolve_classname(document_type_const_name)
+            end
+
+            # Given a string, returns a class representing that string IF that class
+            # exists and is a descendant of the base class of the model.
+            # In any other case, it returns the base class. This is a safe operation.
+            def resolve_classname(classname)
+              # safe_constantize returns Object for blank. So we need to check this ourselves
+              return klass if classname.blank?
+              concrete_class = ActiveSupport::Dependencies.safe_constantize(classname)
+              return concrete_class if ActiveSupport::DescendantsTracker.descendants(klass).include?(concrete_class)
+              klass
             end
           end
 
