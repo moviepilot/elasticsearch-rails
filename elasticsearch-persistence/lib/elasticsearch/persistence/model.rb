@@ -132,7 +132,7 @@ module Elasticsearch
               # safe_constantize returns Object for blank. So we need to check this ourselves
               return klass if classname.blank?
               concrete_class = ActiveSupport::Dependencies.safe_constantize(classname)
-              return concrete_class if ActiveSupport::DescendantsTracker.descendants(klass).include?(concrete_class)
+              return concrete_class if concrete_class && concrete_class < klass
               klass
             end
           end
