@@ -20,6 +20,7 @@ module Elasticsearch
                     raw:  { type: 'string', analyzer: 'keyword' }
                   } }
 
+        attribute :type,       String
         attribute :birthday,   Date
         attribute :department, String
         attribute :salary,     Integer
@@ -227,7 +228,37 @@ module Elasticsearch
           assert_contains @results, 'John 1'
         end
       end
+      context "with sti" do
+        class ::Worker < ::Person
+          document_type 'human_being'
+          index_name 'people'
+        end
 
+        should "return a concrete class if 'type' is a subclass of the base class" do
+          Worker.create name: "John", type: "Worker"
+          Person.gateway.refresh_index!
+          assert_equal Worker, Person.all.first.class
+        end
+
+        should "return a concrete class if 'type' is not a subclass of the base class" do
+          class ::Pilot  ; end
+          Worker.create name: "John", type: "Pilot"
+          Person.gateway.refresh_index!
+          assert_equal Person, Person.all.first.class
+        end
+
+        should "return the base class if 'type' is not stored" do
+          Worker.create name: "John"
+          Person.gateway.refresh_index!
+          assert_equal Person, Person.all.first.class
+        end
+
+        should "return the base class if 'type' is not a class" do
+          Worker.create name: "John", type: "a_type_of_notification"
+          Person.gateway.refresh_index!
+          assert_equal Person, Person.all.first.class
+        end
+      end
     end
   end
 end

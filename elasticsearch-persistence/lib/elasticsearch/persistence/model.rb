@@ -100,7 +100,7 @@ module Elasticsearch
             end
 
             def deserialize(document)
-              object = klass.new document['_source']
+              object = concrete_klass(document).new document['_source']
 
               # Set the meta attributes when fetching the document from Elasticsearch
               #
@@ -117,6 +117,23 @@ module Elasticsearch
 
               object.instance_variable_set(:@persisted, true)
               object
+            end 
+            
+            def concrete_klass(document)
+              return klass unless document['_source'].is_a?(Hash)
+              document_type_const_name = document['_source']['type'].to_s
+              resolve_classname(document_type_const_name)
+            end
+
+            # Given a string, returns a class representing that string IF that class
+            # exists and is a descendant of the base class of the model.
+            # In any other case, it returns the base class. This is a safe operation.
+            def resolve_classname(classname)
+              # safe_constantize returns Object for blank. So we need to check this ourselves
+              return klass if classname.blank?
+              concrete_class = ActiveSupport::Dependencies.safe_constantize(classname)
+              return concrete_class if concrete_class && concrete_class < klass
+              klass
             end
           end
 
